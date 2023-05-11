@@ -45,9 +45,14 @@ public class LocationFinder {
 
     public static final Location geo(@NonNull GeoPoint geo) {
         Location loc = new Location("");
-        loc.setLatitude(loc.getLatitude());
-        loc.setLongitude(loc.getLongitude());
+        loc.setLatitude(geo.getLatitude());
+        loc.setLongitude(geo.getLongitude());
         return loc;
+    }
+
+    public static final String format(@NonNull Location from, @NonNull Location to) {
+        var dist = from.distanceTo(to);
+        return dist < 1000 ? String.format("%.1fm", dist) : String.format("%.2fkm", dist / 1000);
     }
 
     @SuppressLint("MissingPermission")

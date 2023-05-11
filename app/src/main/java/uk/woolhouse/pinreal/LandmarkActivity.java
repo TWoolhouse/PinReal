@@ -1,46 +1,38 @@
 package uk.woolhouse.pinreal;
 
 import android.content.Intent;
-import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.location.Location;
+import android.net.Uri;
 import android.os.Bundle;
-import android.util.Log;
+import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 
-import com.google.android.gms.location.LocationListener;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.gms.tasks.Task;
-import com.google.firebase.firestore.DocumentReference;
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.Filter;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.GeoPoint;
-import com.google.firebase.firestore.QuerySnapshot;
-import com.google.firebase.storage.FileDownloadTask;
-import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.firestore.Query;
 
-import java.io.File;
-import java.io.IOException;
+import java.util.Locale;
+
+import uk.woolhouse.pinreal.model.Landmark;
 
 public class LandmarkActivity extends AppCompatActivity {
     private static final String TAG = "LandmarkActivity";
     private static final String ARG_UUID = "uuid_landmark";
     private String uuid;
-    private GeoPoint loc;
+    private Landmark landmark;
     private LocationFinder finder;
+    private Database db;
 
     @NonNull
     public static Intent From(android.content.Context packageContext, @NonNull String uuid) {
-        Intent intent = new Intent(packageContext, LandmarkActivity.class);
+        var intent = new Intent(packageContext, LandmarkActivity.class);
         intent.putExtra(ARG_UUID, uuid);
         return intent;
     }
@@ -50,76 +42,42 @@ public class LandmarkActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_landmark);
 
-        Intent intent = getIntent();
+        var intent = getIntent();
         uuid = intent.getStringExtra(ARG_UUID);
 
-        TextView view_title = (TextView) this.findViewById(R.id.landmark_text_title);
-        TextView view_description = (TextView) this.findViewById(R.id.landmark_text_description);
-        ImageView view_img = (ImageView) this.findViewById(R.id.landmark_image);
-        TextView view_dist = (TextView) this.findViewById(R.id.landmark_text_distance);
-        RecyclerView view_photos = (RecyclerView) this.findViewById(R.id.landmark_images);
-        view_photos.setLayoutManager(new GridLayoutManager(this, 2));
+        var view_title = (TextView) this.findViewById(R.id.landmark_text_title);
+        var view_description = (TextView) this.findViewById(R.id.landmark_text_description);
+        var view_img = (ImageView) this.findViewById(R.id.landmark_image);
+        var view_dist = (TextView) this.findViewById(R.id.landmark_text_distance);
+        var view_visitors = (TextView) this.findViewById(R.id.landmark_text_visitors);
+        var view_photos = (RecyclerView) this.findViewById(R.id.landmark_images);
+        view_photos.setLayoutManager(new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL));
 
-        finder = new LocationFinder(this, new LocationListener() {
-            @Override
-            public void onLocationChanged(@NonNull Location location) {
-                if (loc != null) {
-                    Log.d(TAG, location.toString());
-                    float distance = location.distanceTo(LocationFinder.geo(loc));
-                    view_dist.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            view_dist.setText(distance < 1000 ? String.format("%.1fm", distance) : String.format("%.2fkm", distance / 1000));
-                        }
-                    });
-                }
+        finder = new LocationFinder(this, geo -> {
+            if (landmark != null) {
+                view_dist.post(() -> view_dist.setText(LocationFinder.format(landmark.location(), geo)));
             }
         });
 
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
-
-        DocumentReference doc_ref = db.collection("landmark").document(uuid);
-        doc_ref.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
-            @Override
-            public void onComplete(@NonNull Task<DocumentSnapshot> task) {
-                if (task.isSuccessful()) {
-                    DocumentSnapshot document = task.getResult();
-                    if (document.exists()) {
-                        Log.d(TAG, document.getId() + " => " + document.getData());
-                        view_title.setText(document.getString("name"));
-                        view_description.setText(document.getString("desc"));
-                        loc = document.getGeoPoint("loc");
-
-                        FirebaseStorage storage = FirebaseStorage.getInstance();
-                        try {
-                            File temp = File.createTempFile("landmark", "img");
-                            storage.getReference("bigben.jpg").getFile(temp).addOnSuccessListener(new OnSuccessListener<FileDownloadTask.TaskSnapshot>() {
-                                @Override
-                                public void onSuccess(FileDownloadTask.TaskSnapshot taskSnapshot) {
-                                    Bitmap bitmap = BitmapFactory.decodeFile(temp.getAbsolutePath());
-                                    view_img.setImageBitmap(bitmap);
-                                }
-                            });
-                        } catch (IOException e) {
-                            throw new RuntimeException(e);
-                        }
-
-                        db.collection("photo").whereEqualTo("landmark", doc_ref).get().addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
-                            @Override
-                            public void onSuccess(QuerySnapshot queryDocumentSnapshots) {
-                                view_photos.setAdapter(new PhotoAdapter(queryDocumentSnapshots));
-                            }
-                        });
-
-
-                    } else {
-                        Toast.makeText(getApplicationContext(), "Unknown Landmark: " + uuid, Toast.LENGTH_SHORT).show();
-                        finish();
-                    }
-                } else {
-                    Log.e(TAG, "get failed with ", task.getException());
-                }
+        db = new Database(this);
+        db.landmark(uuid, landmark -> {
+            if (landmark == null) {
+                Err.unknown(this, "Landmark", uuid);
+                return;
             }
+            this.landmark = landmark;
+            view_title.setText(landmark.name());
+            view_description.setText(landmark.desc());
+
+            db.img(landmark.img(), file -> {
+                view_img.setImageBitmap(BitmapFactory.decodeFile(file.getAbsolutePath()));
+            });
+
+            var fire = FirebaseFirestore.getInstance();
+            fire.collection("photo").whereEqualTo("landmark", fire.collection("landmark").document(uuid)).orderBy("time", Query.Direction.DESCENDING).get().addOnSuccessListener(queryDocumentSnapshots -> {
+                view_visitors.setText(String.valueOf(queryDocumentSnapshots.size()));
+                view_photos.setAdapter(new PhotoLandmarkAdapter(db, queryDocumentSnapshots));
+            });
         });
     }
 
@@ -133,5 +91,24 @@ public class LandmarkActivity extends AppCompatActivity {
     protected void onResume() {
         finder.resume();
         super.onResume();
+    }
+
+    public void showMap(Location location) {
+        var intent = new Intent(Intent.ACTION_VIEW, Uri.parse(String.format(Locale.UK, "geo:%f,%f", location.getLatitude(), location.getLongitude())));
+        if (intent.resolveActivity(getPackageManager()) != null) {
+            startActivity(intent);
+        }
+    }
+
+    public void openLocation(View view) {
+        if (landmark != null) {
+            showMap(landmark.location());
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        db.onDestroy();
+        super.onDestroy();
     }
 }

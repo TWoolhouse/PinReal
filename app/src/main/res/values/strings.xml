@@ -1,8 +1,10 @@
 <resources>
     <string name="app_name" translatable="false">PinReal</string>
     <string name="landmark_title">Landmark Title</string>
+    <string name="landmark_map">📌 Location</string>
     <string name="landmark_distance">00.0km</string>
     <string name="landmark_visitors">00000</string>
     <string name="landmark_description">Landmark Description</string>
     <string name="landmark_image">Photo of the Landmark</string>
+    <string name="user_img_num"> Landmarks\nVisited!</string>
 </resources>
