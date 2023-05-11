@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "505738898723",
+    "project_id": "pinreal",
+    "storage_bucket": "pinreal.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:505738898723:android:b2749d95fa8c894e1ef096",
+        "android_client_info": {
+          "package_name": "uk.woolhouse.pinreal"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "505738898723-b7rug1uqlae2mf9t2v738qtckivcmcek.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB4oj4sNkxQ0PFK2MwluFubn17FSVWEWQs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "505738898723-b7rug1uqlae2mf9t2v738qtckivcmcek.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
