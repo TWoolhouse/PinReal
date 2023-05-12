@@ -68,7 +68,7 @@ public class PhotoLandmarkAdapter extends RecyclerView.Adapter<PhotoLandmarkAdap
         public void bind(@NonNull Photo photo, Database db) {
             current = photo;
             db.img(photo.img(), file -> {
-                view_img.setImageBitmap(BitmapFactory.decodeFile(file.getAbsolutePath()));
+                X.SetImage(view_img, file);
             });
             view_btn.setText(photo.owner());
         }

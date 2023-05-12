@@ -62,7 +62,7 @@ public class PhotoActivity extends AppCompatActivity {
                 // TODO: USER PFP
             });
             db.img(photo.img(), file -> {
-                view_photo.setImageBitmap(BitmapFactory.decodeFile(file.getAbsolutePath()));
+                X.SetImage(view_photo, file);
             });
         });
     }

@@ -70,7 +70,7 @@ public class LandmarkActivity extends AppCompatActivity {
             view_description.setText(landmark.desc());
 
             db.img(landmark.img(), file -> {
-                view_img.setImageBitmap(BitmapFactory.decodeFile(file.getAbsolutePath()));
+                X.SetImage(view_img, file);
             });
 
             var fire = FirebaseFirestore.getInstance();

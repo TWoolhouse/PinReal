@@ -68,11 +68,13 @@ public class Database {
             });
         }
     }
+
     public void photo(String uuid, Lambda<Photo> lambda) {
         fbfs.collection("photo").document(uuid).get().addOnSuccessListener(document -> {
             lambda.call(document.exists() ? Photo.From(document) : null);
         });
     }
+
     public void user(String uuid, Lambda<User> lambda) {
         fbfs.collection("user").document(uuid).get().addOnSuccessListener(document -> {
             lambda.call(document.exists() ? User.From(document) : null);
@@ -84,7 +86,4 @@ public class Database {
         db.onDestroy();
     }
 
-    public interface Lambda<T> {
-        void call(T object);
-    }
 }

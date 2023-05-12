@@ -6,5 +6,13 @@
     <string name="landmark_visitors">00000</string>
     <string name="landmark_description">Landmark Description</string>
     <string name="landmark_image">Photo of the Landmark</string>
-    <string name="user_img_num"> Landmarks\nVisited!</string>
+    <string name="user_img_num">Landmarks\nVisited!</string>
+
+    <string name="service_desc_notification_send">Uploading your Post!</string>
+
+    <string name="notification_new_post_title">%s @ 📌%s</string>
+    <string name="notification_new_post_body">%s has posted a picture of 📌%s</string>
+
+    <string name="notification_upload_post_title">Uploading Post</string>
+    <string name="notification_upload_post_body">Uploading your new Post</string>
 </resources>

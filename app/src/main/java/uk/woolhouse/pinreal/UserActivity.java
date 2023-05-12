@@ -54,7 +54,7 @@ public class UserActivity extends AppCompatActivity {
             view_username.setText(user.name());
 
             db.img(user.img(), file -> {
-                view_img.setImageBitmap(BitmapFactory.decodeFile(file.getAbsolutePath()));
+                X.SetImage(view_img, file);
             });
 
             var fire = FirebaseFirestore.getInstance();

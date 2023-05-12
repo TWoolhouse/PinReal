@@ -14,6 +14,7 @@ import com.google.firebase.firestore.FirebaseFirestoreSettings;
 import com.google.firebase.storage.FirebaseStorage;
 
 import uk.woolhouse.pinreal.R;
+import uk.woolhouse.pinreal.notification.SenderService;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -37,17 +38,7 @@ public class MainActivity extends AppCompatActivity {
         startActivity(LandmarkActivity.From(MainActivity.this, "QsVNkwl5r2OzMOg36iLU"));
     }
 
-    public void camera(View view) {
-        dispatchTakePictureIntent();
-    }
-
-    static final int REQUEST_IMAGE_CAPTURE = 1;
-    private void dispatchTakePictureIntent() {
-        var intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        try {
-            startActivityForResult(intent, REQUEST_IMAGE_CAPTURE);
-        } catch (ActivityNotFoundException e) {
-            Log.e("CAMERA", "Camera App not Found!");
-        }
+    public void gotoCamera(View view) {
+        startActivity(ProximityActivity.From(MainActivity.this));
     }
 }
