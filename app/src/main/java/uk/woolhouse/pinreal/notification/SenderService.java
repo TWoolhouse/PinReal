@@ -32,7 +32,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -121,10 +120,13 @@ public class SenderService extends Service {
             var file = new File(filepath);
             try {
                 prepare_image(file);
-            } catch (IOException e) {}
+            } catch (IOException e) {
+            }
+            var stopID = msg.arg1;
             upload(file, landmark, owner, _null -> {
                 file.delete();
-                stopSelf(msg.arg1);
+                stopSelf(stopID);
+                Log.i(TAG, String.format("Photo Done: %s @ %s <%s>", owner, landmark, filepath));
             });
         }
 
@@ -144,9 +146,12 @@ public class SenderService extends Service {
                 FileInputStream ifstream = null;
                 try {
                     ifstream = new FileInputStream(image);
-                } catch (FileNotFoundException e) {}
+                } catch (FileNotFoundException e) {
+                    return;
+                }
+                FileInputStream finalIfstream = ifstream;
                 firestorage.getReference().child(uuid).putStream(ifstream, new StorageMetadata.Builder().setContentType("image/jpg").setCacheControl("public, max-age=31536000, immutable").build()).addOnSuccessListener(task -> {
-                    Log.i(TAG, String.format("%s uploaded %d bytes", uuid, task.getBytesTransferred()));
+                    Log.d(TAG, String.format("%s uploaded %d bytes", uuid, task.getBytesTransferred()));
                     Map<String, Object> photo = new HashMap<>();
                     photo.put("img", uuid);
                     photo.put("landmark", firestore.collection("landmark").document(landmark));
@@ -158,6 +163,11 @@ public class SenderService extends Service {
                 }).addOnFailureListener(task -> {
                     Log.e(TAG, task.toString());
                     done.call(null);
+                }).addOnCompleteListener(task -> {
+                    try {
+                        finalIfstream.close();
+                    } catch (IOException e) {
+                    }
                 });
             }).addOnFailureListener(task -> {
                 Log.e(TAG, task.toString());
