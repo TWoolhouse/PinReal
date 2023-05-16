@@ -4,10 +4,13 @@ import static com.google.android.gms.location.LocationRequest.PRIORITY_HIGH_ACCU
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Looper;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresPermission;
+import androidx.core.app.ActivityCompat;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
@@ -55,7 +58,7 @@ public class LocationFinder {
         return dist < 1000 ? String.format("%.1fm", dist) : String.format("%.2fkm", dist / 1000);
     }
 
-    @SuppressLint("MissingPermission")
+    @RequiresPermission(anyOf = {"android.permission.ACCESS_COARSE_LOCATION","android.permission.ACCESS_FINE_LOCATION"})
     public final LocationFinder resume() {
         if (!active) {
             active = true;

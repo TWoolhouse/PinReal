@@ -1,7 +1,10 @@
 package uk.woolhouse.pinreal;
 
+import android.content.Context;
 import android.graphics.BitmapFactory;
 import android.widget.ImageView;
+
+import androidx.annotation.NonNull;
 
 import java.io.File;
 
@@ -15,5 +18,10 @@ public class X {
         } finally {
             file.delete();
         }
+    }
+
+    @NonNull
+    public static String me(Context content) {
+        return LoginActivity.current_user(content);
     }
 }
