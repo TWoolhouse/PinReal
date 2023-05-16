@@ -5,10 +5,10 @@ import { RouterLink, RouterView } from 'vue-router'
 <template>
 	<header>
 		<RouterLink to="/">🏠</RouterLink>
-		<RouterLink to="/proximity">🎯</RouterLink>
-		<RouterLink to="/landmark">🗼</RouterLink>
-		<RouterLink to="/user">👤</RouterLink>
-		<RouterLink to="/post">📷</RouterLink>
+		<RouterLink to="proximity">🎯</RouterLink>
+		<RouterLink to="landmark">🗼</RouterLink>
+		<RouterLink to="user">👤</RouterLink>
+		<RouterLink to="post">📷</RouterLink>
 	</header>
 	<main>
 		<RouterView />
