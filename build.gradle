@@ -2,8 +2,9 @@
 buildscript {
     repositories {
         google()  // Google's Maven repository
+        jcenter()
+        maven { url "https://jitpack.io" }
         mavenCentral()  // Maven Central repository
-
     }
     dependencies {
         // Add the dependency for the Google services Gradle plugin

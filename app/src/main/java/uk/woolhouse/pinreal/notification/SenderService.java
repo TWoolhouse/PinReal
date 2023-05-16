@@ -20,24 +20,38 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
+import com.androidnetworking.AndroidNetworking;
+import com.androidnetworking.error.ANError;
+import com.androidnetworking.interfaces.OkHttpResponseListener;
+import com.google.firebase.FirebaseApp;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageMetadata;
 
 import org.jetbrains.annotations.NotNull;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
+import okhttp3.Response;
+import uk.woolhouse.pinreal.Database;
 import uk.woolhouse.pinreal.Lambda;
 import uk.woolhouse.pinreal.MainActivity;
 import uk.woolhouse.pinreal.R;
+import uk.woolhouse.pinreal.cb.SeqCollector;
 
 public class SenderService extends Service {
 
@@ -50,6 +64,7 @@ public class SenderService extends Service {
     private ServiceHandler serviceHandler;
     private FirebaseFirestore firestore;
     private FirebaseStorage firestorage;
+    private Database db;
 
     @NonNull
     public static Intent From(android.content.Context packageContext, @NonNull File file, @NonNull String landmark, @NonNull String owner) {
@@ -70,6 +85,8 @@ public class SenderService extends Service {
 
         firestore = FirebaseFirestore.getInstance();
         firestorage = FirebaseStorage.getInstance();
+        db = new Database(this);
+        AndroidNetworking.initialize(getApplicationContext());
     }
 
     @Override
@@ -100,6 +117,8 @@ public class SenderService extends Service {
 
     @Override
     public void onDestroy() {
+        db.onDestroy();
+        AndroidNetworking.shutDown();
         super.onDestroy();
     }
 
@@ -123,10 +142,13 @@ public class SenderService extends Service {
             } catch (IOException e) {
             }
             var stopID = msg.arg1;
-            upload(file, landmark, owner, _null -> {
-                file.delete();
-                stopSelf(stopID);
+            upload(file, landmark, owner, photo -> {
                 Log.i(TAG, String.format("Photo Done: %s @ %s <%s>", owner, landmark, filepath));
+                file.delete();
+                if (photo == null) stopSelf(stopID);
+                else send_notification(owner, photo, success -> {
+                    stopSelf(stopID);
+                });
             });
         }
 
@@ -140,7 +162,7 @@ public class SenderService extends Service {
             stream.close();
         }
 
-        private void upload(@NotNull File image, @NonNull String landmark, @NonNull String owner, Lambda<Object> done) {
+        private void upload(@NotNull File image, @NonNull String landmark, @NonNull String owner, Lambda<String> done) {
             firestore.collection("photo").add(new HashMap<String, Object>()).addOnSuccessListener(doc -> {
                 var uuid = doc.getId();
                 FileInputStream ifstream = null;
@@ -158,7 +180,7 @@ public class SenderService extends Service {
                     photo.put("owner", firestore.collection("user").document(owner));
                     photo.put("time", FieldValue.serverTimestamp());
                     doc.set(photo).addOnCompleteListener(_task -> {
-                        done.call(null);
+                        done.call(_task.isSuccessful() ? uuid : null);
                     });
                 }).addOnFailureListener(task -> {
                     Log.e(TAG, task.toString());
@@ -173,6 +195,121 @@ public class SenderService extends Service {
                 Log.e(TAG, task.toString());
                 done.call(null);
             });
+        }
+
+        private void send_notification(@NonNull String owner, @NonNull String photo, Lambda<Boolean> done) {
+            firestore.collection("user").document(owner).collection("followers").get().addOnSuccessListener(collection -> {
+                Log.i(TAG, String.format("Notifying %d Users", collection.size()));
+                var collector = new SeqCollector<String>();
+                collector.wait(collection.size(), tokens -> {
+                    var messages = message_post_new(tokens, photo);
+                    var requests = new SeqCollector<Boolean>();
+                    requests.wait(messages.size(), reqs -> {
+                        done.call(true);
+                    });
+                    for (var msg : messages) {
+                        var body = new JSONObject();
+                        var tks = new JSONArray();
+                        msg.tokens.forEach(tks::put);
+                        try {
+                            body.put("registration_ids", tks);
+                            var data = new JSONObject();
+                            data.put("type", MessagePostNew.TYPE);
+                            data.put("uuid", photo);
+                            body.put("data", data);
+                        } catch (JSONException e) {
+                            throw new RuntimeException(e);
+                        }
+                        var headers = new HashMap<String, String>();
+                        // TODO: Place API Key Here!
+                        headers.put("Authorization", "key=SECRET_KEY");
+                        headers.put("Content-Type", "application/json");
+                        Log.d(TAG, body.toString());
+                        AndroidNetworking.post("https://fcm.googleapis.com/fcm/send")
+                                .addHeaders(headers)
+                                .addJSONObjectBody(body)
+                                .build().getAsOkHttpResponse(new OkHttpResponseListener() {
+                                    @Override
+                                    public void onResponse(Response response) {
+                                        Log.d(TAG, response.toString());
+                                        Log.d(TAG, "Request Success!");
+                                        requests.done(true);
+                                    }
+                                    @Override
+                                    public void onError(ANError anError) {
+                                        Log.w(TAG, "Request Failed!");
+                                        requests.done(false);
+                                    }
+                                });
+                    }
+                });
+                for (var subscription : collection) {
+                    firestore.collection("user").document(subscription.getId()).get().addOnSuccessListener(doc -> {
+                        collector.done(doc.getString("tk"));
+                    });
+                }
+            }).addOnFailureListener(task -> {
+                done.call(false);
+            });
+        }
+
+        private List<List<String>> batch_tokens(List<String> tokens) {
+            var batches = new ArrayList<List<String>>();
+            var max_size = 500;
+            var index = 0;
+            while (index < tokens.size()) {
+                batches.add(tokens.subList(index, Math.min(tokens.size(), index + max_size)));
+                index += max_size;
+            }
+            return batches;
+        }
+
+        private List<MessagePostNew> message_post_new(List<String> tokens, @NonNull String photo) {
+            var messages = new ArrayList<MessagePostNew>();
+            for (var batch : batch_tokens(tokens))
+                messages.add(new MessagePostNew(batch, photo));
+            return messages;
+        }
+    }
+
+    private static final class MessagePostNew {
+        private final List<String> tokens;
+        private final String photo;
+
+        public static final String TYPE = "post_new";
+
+        private MessagePostNew(List<String> tokens, String photo) {
+            this.tokens = tokens;
+            this.photo = photo;
+        }
+
+        public List<String> tokens() {
+            return tokens;
+        }
+
+        public String photo() {
+            return photo;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj == this) return true;
+            if (obj == null || obj.getClass() != this.getClass()) return false;
+            var that = (MessagePostNew) obj;
+            return Objects.equals(this.tokens, that.tokens) &&
+                    Objects.equals(this.photo, that.photo);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(tokens, photo);
+        }
+
+        @Override
+        public String toString() {
+            return "MessagePostNew[" +
+                    "tokens=" + tokens + ", " +
+                    "photo=" + photo + ']';
         }
     }
 }

@@ -20,10 +20,11 @@ import com.google.firebase.messaging.RemoteMessage;
 import java.io.File;
 import java.util.Map;
 
-import uk.woolhouse.pinreal.CallbackCollector;
 import uk.woolhouse.pinreal.Database;
+import uk.woolhouse.pinreal.LoginActivity;
 import uk.woolhouse.pinreal.PhotoActivity;
 import uk.woolhouse.pinreal.R;
+import uk.woolhouse.pinreal.cb.NameCollector;
 import uk.woolhouse.pinreal.model.Landmark;
 import uk.woolhouse.pinreal.model.User;
 
@@ -33,7 +34,7 @@ public class ReceiverService extends FirebaseMessagingService {
 
     @Override
     public void onMessageReceived(RemoteMessage remoteMessage) {
-        Log.d(TAG, "From: " + remoteMessage.getFrom());
+        Log.d(TAG, "Notification!");
 
         var content = remoteMessage.getData();
         // Check if message contains a data payload.
@@ -41,40 +42,42 @@ public class ReceiverService extends FirebaseMessagingService {
             Log.w(TAG, "Message contains no data!");
         }
 
-        db = new Database(this);
-        try {
-            switch (content.get("type")) {
-                case "post_new" -> {
-                    notificationNewPost(content);
-                }
-                default -> {
-                    Log.w(TAG, "Message has no corresponding type");
-                }
-            }
-        } finally {
-            db.onDestroy();
+        if ("post_new".equals(content.get("type"))) {
+            notificationNewPost(content);
+        } else {
+            Log.w(TAG, "Message has no corresponding type");
         }
     }
 
     @Override
     public void onNewToken(@NonNull String token) {
         Log.d(TAG, "Refreshed token: " + token);
+        LoginActivity.preferences(this).edit().putString(getString(R.string.key_token), token).apply();
+    }
 
-        // If you want to send messages to this application instance or
-        // manage this apps subscriptions on the server side, send the
-        // FCM registration token to your app server.
+    @Override
+    public void onCreate() {
+        db = new Database(this);
+        super.onCreate();
+    }
+
+    @Override
+    public void onDestroy() {
+        db.onDestroy();
+        super.onDestroy();
     }
 
     private void notificationNewPost(@NonNull Map<String, String> content) {
         var uuid = content.get("uuid");
+        Log.d(TAG, "Notification - Post New: " + uuid);
 
-        var collector = new CallbackCollector<Object>();
+        var collector = new NameCollector<Object>();
         collector.wait(4, results -> {
             var img = (File) results.get("img");
             var user = (User) results.get("user");
             var landmark = (Landmark) results.get("landmark");
-
-            sendNotification(uuid.hashCode(), PhotoActivity.From(this, uuid), Channel.NewPost, notification -> {
+            var photo_uid = uuid;
+            sendNotification(photo_uid.hashCode(), PhotoActivity.From(this, photo_uid), Channel.NewPost, notification -> {
                 var title = String.format(getString(R.string.notification_new_post_title), user.name(), landmark.name());
                 var body = String.format(getString(R.string.notification_new_post_body), user.name(), landmark.name());
                 var bitmap = BitmapFactory.decodeFile(img.getAbsolutePath());
@@ -92,7 +95,7 @@ public class ReceiverService extends FirebaseMessagingService {
     }
 
     private void sendNotification(int code, Intent intent, Channel channel, Notify builder) {
-        var pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE);
+        var pendingIntent = PendingIntent.getActivity(this, code, intent, PendingIntent.FLAG_IMMUTABLE);
 
         var notificationBuilder = builder.build(new NotificationCompat.Builder(this, channel.id).setSmallIcon(R.mipmap.ic_launcher).setAutoCancel(true).setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)).setContentIntent(pendingIntent));
 

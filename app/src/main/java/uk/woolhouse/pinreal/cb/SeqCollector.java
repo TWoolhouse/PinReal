@@ -1,22 +1,23 @@
-package uk.woolhouse.pinreal;
+package uk.woolhouse.pinreal.cb;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 import java.util.Objects;
 
-public class CallbackCollector<T> {
+import uk.woolhouse.pinreal.Lambda;
 
-    private final Map<String, T> results = new HashMap<>();
-    private final ArrayList<Tuple> callbacks = new ArrayList<>();
+public class SeqCollector<T> {
 
-    public void done(String key, T result) {
-        results.put(key, result);
+    private final List<T> results = new ArrayList<>();
+    private final ArrayList<Tuple<T>> callbacks = new ArrayList<>();
+
+    public void done(T result) {
+        results.add(result);
         trigger();
     }
 
-    public void wait(int count, Lambda<Map<String, T>> callback) {
-        callbacks.add(new Tuple(count, callback));
+    public void wait(int count, Lambda<List<T>> callback) {
+        callbacks.add(new Tuple<T>(count, callback));
         trigger();
     }
 
@@ -30,11 +31,11 @@ public class CallbackCollector<T> {
         }
     }
 
-    private final class Tuple {
+    public static final class Tuple<T> {
         private final int count;
-        private final Lambda<Map<String, T>> cb;
+        private final Lambda<List<T>> cb;
 
-        private Tuple(int count, Lambda<Map<String, T>> cb) {
+        public Tuple(int count, Lambda<List<T>> cb) {
             this.count = count;
             this.cb = cb;
         }
@@ -43,7 +44,7 @@ public class CallbackCollector<T> {
             return count;
         }
 
-        public Lambda<Map<String, T>> cb() {
+        public Lambda<List<T>> cb() {
             return cb;
         }
 
@@ -67,7 +68,5 @@ public class CallbackCollector<T> {
                     "count=" + count + ", " +
                     "cb=" + cb + ']';
         }
-
-        }
-
+    }
 }

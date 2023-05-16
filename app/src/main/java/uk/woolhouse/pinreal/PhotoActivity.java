@@ -1,14 +1,16 @@
 package uk.woolhouse.pinreal;
 
 import android.content.Intent;
-import android.graphics.BitmapFactory;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 
 import uk.woolhouse.pinreal.model.Landmark;
 
@@ -75,7 +77,9 @@ public class PhotoActivity extends AppCompatActivity {
 
     @Override
     protected void onResume() {
-        finder.resume();
+        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            finder.resume();
+        }
         super.onResume();
     }
 
