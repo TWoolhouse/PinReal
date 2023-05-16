@@ -41,4 +41,8 @@ public class MainActivity extends AppCompatActivity {
     public void gotoCamera(View view) {
         startActivity(ProximityActivity.From(MainActivity.this));
     }
+
+    public void gotoWebview(View view) {
+        startActivity(GuideActivity.From(this));
+    }
 }
