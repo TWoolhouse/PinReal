@@ -10,6 +10,7 @@
         android:id="@+id/adapter_landmark_loc"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginEnd="16dp"
         android:text="@string/landmark_map"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

@@ -33,6 +33,7 @@
             android:layout_marginEnd="16dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
+            android:onClick="gotoLandmark"
             tools:text="000km" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
@@ -59,5 +60,6 @@
         android:textSize="34sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
+        android:onClick="gotoUser"
         tools:text="Username" />
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -13,6 +14,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
 import uk.woolhouse.pinreal.model.Landmark;
+import uk.woolhouse.pinreal.model.User;
 
 public class PhotoActivity extends AppCompatActivity {
 
@@ -21,6 +23,7 @@ public class PhotoActivity extends AppCompatActivity {
 
     private String uuid;
     private Landmark landmark;
+    private User user;
     private LocationFinder finder;
     private Database db;
 
@@ -61,7 +64,8 @@ public class PhotoActivity extends AppCompatActivity {
                 this.landmark = landmark;
             });
             db.user(photo.owner(), user -> {
-                // TODO: USER PFP
+                view_user_name.setText(user.name());
+                this.user = user;
             });
             db.img(photo.img(), file -> {
                 X.SetImage(view_photo, file);
@@ -87,5 +91,15 @@ public class PhotoActivity extends AppCompatActivity {
     protected void onDestroy() {
         db.onDestroy();
         super.onDestroy();
+    }
+
+    public void gotoLandmark(View view) {
+        if (landmark != null)
+            startActivity(LandmarkActivity.From(this, landmark.uuid()));
+    }
+
+    public void gotoUser(View view) {
+        if (user != null)
+            startActivity(UserActivity.From(this, user.uuid()));
     }
 }
