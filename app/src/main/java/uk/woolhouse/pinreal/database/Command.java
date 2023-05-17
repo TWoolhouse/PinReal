@@ -15,7 +15,8 @@ public class Command {
                     Contract.Landmark.desc + " TEXT," +
                     Contract.Landmark.img + " TEXT," +
                     Contract.Landmark.lat + " REAL," +
-                    Contract.Landmark.lng + " REAL)";
+                    Contract.Landmark.lng + " REAL," +
+                    Contract.Landmark.radius + " REAL)";
 
     public static final String[] TableCreate = new String[]{
             TableCreateImg, TableCreateLandmark,
@@ -34,6 +35,6 @@ public class Command {
         String.format("SELECT %s,%s FROM %s WHERE %s = ? LIMIT 1", Contract.Img.name, Contract.Img.data, Contract.Img.TABLE_NAME, Contract.Img.name);
 
     public static final String LandmarkGet =
-            String.format("SELECT %s,%s,%s,%s,%s,%s FROM %s WHERE %s = ? LIMIT 1", Contract.Landmark.uuid, Contract.Landmark.name, Contract.Landmark.desc, Contract.Landmark.img, Contract.Landmark.lat, Contract.Landmark.lng, Contract.Landmark.TABLE_NAME, Contract.Landmark.uuid);
+            String.format("SELECT %s,%s,%s,%s,%s,%s,%s FROM %s WHERE %s = ? LIMIT 1", Contract.Landmark.uuid, Contract.Landmark.name, Contract.Landmark.desc, Contract.Landmark.img, Contract.Landmark.lat, Contract.Landmark.lng, Contract.Landmark.radius, Contract.Landmark.TABLE_NAME, Contract.Landmark.uuid);
 
 }

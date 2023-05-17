@@ -6,6 +6,7 @@
     <string name="landmark_visitors">00000</string>
     <string name="landmark_description">Landmark Description</string>
     <string name="landmark_image">Photo of the Landmark</string>
+    <string name="landmark_camera">Camera 📸</string>
 
     <string name="user_img_num">Landmarks\nVisited!</string>
     <string name="user_follow">Follow</string>
@@ -26,6 +27,10 @@
 
     <string name="login_incorrect_username">Username is incorrect!</string>
     <string name="login_incorrect_password">Password is incorrect!</string>
+
+    <string name="home_landmarks">Nearby Landmarks</string>
+    <string name="home_following">Recently Taken Photos</string>
+    <string name="home_user_guide">User Guide</string>
 
     <string name="key_user_uid" translatable="false">KeyUserUID</string>
     <string name="key_token" translatable="false">KeyToken</string>

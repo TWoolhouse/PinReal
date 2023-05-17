@@ -3,7 +3,7 @@ package uk.woolhouse.pinreal.database;
 import android.provider.BaseColumns;
 
 public class Contract {
-    public static final int VERSION = 3;
+    public static final int VERSION = 4;
 
     public class Img implements BaseColumns {
         public static final String TABLE_NAME = "img";
@@ -19,6 +19,7 @@ public class Contract {
         public static final String img = "img";
         public static final String lat = "lat";
         public static final String lng = "long";
+        public static final String radius = "radius";
     }
 
     private Contract() {}

@@ -5,15 +5,19 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.StaggeredGridLayoutManager;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
@@ -29,6 +33,9 @@ public class LandmarkActivity extends AppCompatActivity {
     private Landmark landmark;
     private LocationFinder finder;
     private Database db;
+
+    private Proximity proximity = null;
+    private Boolean taken = true;
 
     @NonNull
     public static Intent From(android.content.Context packageContext, @NonNull String uuid) {
@@ -51,11 +58,14 @@ public class LandmarkActivity extends AppCompatActivity {
         var view_dist = (TextView) this.findViewById(R.id.landmark_text_distance);
         var view_visitors = (TextView) this.findViewById(R.id.landmark_text_visitors);
         var view_photos = (RecyclerView) this.findViewById(R.id.landmark_images);
+        var view_camera = (Button) this.findViewById(R.id.landmark_camera);
+        var view_refresh = (SwipeRefreshLayout) this.findViewById(R.id.refresh_landmark_photos);
         view_photos.setLayoutManager(new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL));
 
         finder = new LocationFinder(this, geo -> {
             if (landmark != null) {
                 view_dist.post(() -> view_dist.setText(LocationFinder.format(landmark.location(), geo)));
+                view_camera.post(() -> view_camera.setVisibility(!taken && (geo.distanceTo(landmark.location()) < landmark.radius()) ? View.VISIBLE : View.GONE));
             }
         });
 
@@ -76,7 +86,24 @@ public class LandmarkActivity extends AppCompatActivity {
             var fire = FirebaseFirestore.getInstance();
             fire.collection("photo").whereEqualTo("landmark", fire.collection("landmark").document(uuid)).orderBy("time", Query.Direction.DESCENDING).get().addOnSuccessListener(queryDocumentSnapshots -> {
                 view_visitors.setText(String.valueOf(queryDocumentSnapshots.size()));
+                var me = X.me(this);
+                var found = false;
+                for (var doc : queryDocumentSnapshots) {
+                    if (doc.getDocumentReference("owner").getId().equals(me)) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found)
+                    taken = false;
                 view_photos.setAdapter(new PhotoLandmarkAdapter(db, queryDocumentSnapshots));
+            });
+            view_refresh.setOnRefreshListener(() -> {
+                fire.collection("photo").whereEqualTo("landmark", fire.collection("landmark").document(uuid)).orderBy("time", Query.Direction.DESCENDING).get().addOnSuccessListener(queryDocumentSnapshots -> {
+                    view_visitors.setText(String.valueOf(queryDocumentSnapshots.size()));
+                    view_photos.setAdapter(new PhotoLandmarkAdapter(db, queryDocumentSnapshots));
+                    view_refresh.setRefreshing(false);
+                });
             });
         });
     }
@@ -112,5 +139,17 @@ public class LandmarkActivity extends AppCompatActivity {
     protected void onDestroy() {
         db.onDestroy();
         super.onDestroy();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        if (proximity == null || proximity.onActivityResult(requestCode, resultCode, data)) super.onActivityResult(requestCode, resultCode, data);
+        proximity = null;
+    }
+
+    public void camera(View view) {
+        if (taken) return;
+        proximity = new Proximity(this, uuid, X.me(this));
+        taken = true;
     }
 }

@@ -59,6 +59,7 @@ public class Connection {
         values.put(Contract.Landmark.img, landmark.img());
         values.put(Contract.Landmark.lat, landmark.location().getLatitude());
         values.put(Contract.Landmark.lng, landmark.location().getLongitude());
+        values.put(Contract.Landmark.radius, landmark.radius());
         connection.insert(Contract.Landmark.TABLE_NAME, null, values);
     }
 

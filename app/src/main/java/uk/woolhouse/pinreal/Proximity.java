@@ -1,6 +1,9 @@
 package uk.woolhouse.pinreal;
 
+import static android.app.Activity.RESULT_OK;
+
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -22,25 +25,20 @@ import java.util.Date;
 
 import uk.woolhouse.pinreal.notification.SenderService;
 
-public class ProximityActivity extends AppCompatActivity {
+public class Proximity {
 
     static final int REQUEST_IMAGE_CAPTURE = 1;
     private static final String TAG = "ProximityActivity";
+    private final String landmark;
+    private final String owner;
     private File buffer;
 
-    @NonNull
-    public static Intent From(android.content.Context packageContext) {
-        var intent = new Intent(packageContext, ProximityActivity.class);
-        return intent;
-    }
+    private final Activity activity;
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_proximity);
-    }
-
-    public void camera(View view) {
+    public Proximity(Activity activity, @NonNull String landmark, @NonNull String owner) {
+        this.activity = activity;
+        this.landmark = landmark;
+        this.owner = owner;
         dispatchTakePictureIntent();
     }
 
@@ -49,9 +47,9 @@ public class ProximityActivity extends AppCompatActivity {
         try {
             buffer = createImageFile();
             if (buffer != null) {
-                var uri = FileProvider.getUriForFile(this, "uk.woolhouse.PinReal.fileprovider", buffer);
+                var uri = FileProvider.getUriForFile(activity, "uk.woolhouse.PinReal.fileprovider", buffer);
                 intent.putExtra(MediaStore.EXTRA_OUTPUT, uri);
-                startActivityForResult(intent, REQUEST_IMAGE_CAPTURE);
+                activity.startActivityForResult(intent, REQUEST_IMAGE_CAPTURE);
             }
         } catch (ActivityNotFoundException e) {
             Log.e(TAG, "Camera App not Found!");
@@ -61,24 +59,21 @@ public class ProximityActivity extends AppCompatActivity {
     }
 
     private File createImageFile() throws IOException {
-        File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        File storageDir = activity.getExternalFilesDir(Environment.DIRECTORY_PICTURES);
         File image = File.createTempFile("camera", ".jpg", storageDir);
         return image;
     }
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+    protected boolean onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         if (requestCode == REQUEST_IMAGE_CAPTURE) {
             if (resultCode == RESULT_OK && buffer != null) {
-                // TODO: Un-hardcode
-                upload(buffer, "QsVNkwl5r2OzMOg36iLU", "alice");
+                upload(buffer, landmark, owner);
             }
-        } else {
-            super.onActivityResult(requestCode, resultCode, data);
-        }
+            return false;
+        } return true;
     }
 
     private void upload(@NonNull File file, @NonNull String landmark, @NonNull String owner) {
-         startForegroundService(SenderService.From(this, file, landmark, owner));
+         activity.startForegroundService(SenderService.From(activity, file, landmark, owner));
     }
 }
