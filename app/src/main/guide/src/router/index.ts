@@ -13,11 +13,6 @@ const router = createRouter({
       component: Home
     },
     {
-      path: '/proximity',
-      name: 'proximity',
-      component: () => import('../views/Proximity.vue')
-    },
-    {
       path: '/landmark',
       name: 'landmark',
       component: () => import('../views/Landmark.vue')

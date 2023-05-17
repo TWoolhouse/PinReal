@@ -12,4 +12,10 @@
 	</ul>
 	Futhermore, a list of all posts at this landmark can be seen at the bottom. You may tap on either the images or the name and they will take you to the <RouterLink to="/post">Post 📷</RouterLink> or the <RouterLink to="user">User 👤</RouterLink> respectively.
 	</p>
+
+	<h2>Camera</h2>
+	<img src="@/assets/camera.png" alt="Taking a Photo">
+	<p>If you are within a set range of a landmark, you will be prompted to open the camera and take a picture of the landmark.
+		If you choose to take a picture, your default camera app will be open and allow you to take a picture.
+		Once this has completed, a new post on your account will be immediately created and a notification will be sent out to your followers.</p>
 </template>

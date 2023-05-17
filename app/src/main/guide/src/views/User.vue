@@ -8,4 +8,8 @@
 	</ul>
 	The posts at the bottom of the page will link to either the <RouterLink to="post">Post 📷</RouterLink> or the <RouterLink to="landmark">Landmark 🗼</RouterLink> of that post.
 	</p>
+	<h2>Following</h2>
+	<img src="@/assets/follow.png" alt="Following">
+	<p>On the user page, you are also able to follow and unfollow other people.
+		This means you will receive a notification if they make a new post by reaching a landmark.</p>
 </template>
